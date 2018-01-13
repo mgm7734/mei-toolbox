@@ -1,0 +1,27 @@
+#!/usr/bin/awk -f
+#127.0.0.1 - - [12/Jan/2018:08:07:12 -0600] "GET /apix/v2/cuny_parcs/instrument/ema_ots/participant/101003/period/active_period/getFeedback HTTP/1.0" 200 87
+#sed -e 's:.*- \[\([^]]*\)] "\([^ ]*\):\1,\2,:' $1
+
+BEGIN {
+    OFS = ","
+    split("Jan,Feb,Mar,AprMay,Jun,Jul,Aug,Sep,Oct,Nov,Dec", t, ",")
+    for(i = 1; i <= 12; ++i) MONTH[t[i]] = sprintf("%02d", i)
+}
+{
+    if (match($0, /.+\[(.+)\] "([^ ]+) ([^ ]+) HTTP.*" ([0-9]+) (.*)/, g)) {
+        date = parseDate(g[1])
+        method = g[2]
+        url = g[3]
+        status = g[4]
+        size = g[5]
+        print date,method,url,status,size
+    } else {
+        print "************OUCH"
+    }
+}
+
+function parseDate(d) {
+    pat = "(..)/(...)/(....):([^ ]+)"
+    match(d, pat, a)
+    return a[3] "-" MONTH[a[2]] "-" a[1] " " a[4]
+}
