@@ -5,23 +5,44 @@
 BEGIN {
     OFS = ","
     split("Jan,Feb,Mar,AprMay,Jun,Jul,Aug,Sep,Oct,Nov,Dec", t, ",")
-    for(i = 1; i <= 12; ++i) MONTH[t[i]] = sprintf("%02d", i)
+    for(i in t) MONTH[t[i]] = sprintf("%02d", i)
 }
 {
     if (match($0, /.+\[(.+)\] "([^ ]+) ([^ ]+) HTTP.*" ([0-9]+) (.*)/, g)) {
         date = parseDate(g[1])
         method = g[2]
-        url = g[3]
+        url = mungUrl(g[3])
         status = g[4]
         size = g[5]
-        print date,method,url,status,size
+        # print date,method,url,status,size
+        reqs[method" "url]++
+        
     } else {
-        print "************OUCH"
+        print "************OUCH:" $0 > "/dev/stderr"
     }
 }
+END {
+    for (r in reqs)
+        print reqs[r], r
+}
 
-function parseDate(d) {
+function parseDate(d,
+                   # local
+                   a) {
     pat = "(..)/(...)/(....):([^ ]+)"
     match(d, pat, a)
-    return a[3] "-" MONTH[a[2]] "-" a[1] " " a[4]
+    return a[3]"-"MONTH[a[2]]"-"a[1]" "a[4]
+}
+
+function mungUrl(url,
+                         # local
+                         a, pat) {
+    url = gensub("^(/apix?/v.)/.*/instrument/.*/participant/([^/]*)",
+                 "\\1/$PROJ/instrument/$INST/participant/$PT",
+                 "g", url )
+    url = gensub("^/project/([^/]+/)", "/project/$PROJ/", "g", url)
+    url = gensub("\\<[0-9]{3,}\\>", "$NUM", "g", url)
+    url = gensub("\\?.*", "?$QUERY", "g", url)
+    url = gensub("/show/\\w{16,}", "/show/$ID", "g", url)
+    return url
 }
