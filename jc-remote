@@ -1,0 +1,16 @@
+#! /usr/bin/env bash
+# jconsole on remote host
+set +x
+host=${1-mei-s4r-tomcat-qa01}
+
+ssh -ND 7777 $host &
+#jconsole -debug -J-DsocksProxyHost=localhost -J-DsocksProxyPort=1234 \
+#         service:jmx:rmi:///jndi/rmi://localhost:9876/jmxrmi
+
+jconsole -J-DsocksProxyHost=localhost -J-DsocksProxyPort=7777 service:jmx:rmi:///jndi/rmi://localhost:9876/jmxrmi -J-DsocksNonProxyHosts=
+
+cleanup() {
+  kill %1
+}
+
+trap 'cleanup' INT TERM EXIT
