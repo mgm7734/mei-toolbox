@@ -1,0 +1,27 @@
+#!/bin/bash
+PROJ=$1
+PASSWORD=$2
+
+function dump-coll() {
+    mongodump --authenticationDatabase=admin -u mei -p $PASSWORD -d mei-s4r-beta --gzip \
+            --collection $1 \
+            --host=127.0.0.1 --out dump-collection
+    
+}
+function dumpDatasets() {
+    # PAT='new RegExp(`(app_log|notification_log|survey_data):data:${proj._id}`)'
+
+    DATASETS=$(
+        mongo  -u mei-s4r-beta-user -p $PASSWORD mei-s4r-beta --eval "\
+            var proj=db.project.findOne({code:'$PROJ'}); \
+            db.getCollectionNames().filter(nm=>nm.endsWith(':data:'+proj._id)).join(' ')
+        " | tail -n 1
+    )
+    for coll in  $DATASETS ; do
+        echo $coll
+        dump-coll $coll
+    done
+}
+dump-coll group_
+dump-coll participant
+dumpDatasets

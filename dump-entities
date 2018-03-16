@@ -1,0 +1,31 @@
+#!/bin/bash
+
+PASSWORD=$1
+
+function dump-coll() {
+    mongodump --authenticationDatabase=admin -u mei -p $PASSWORD -d mei-s4r-beta --gzip \
+            --collection $1 \
+            --host=127.0.0.1 --out dump-collection
+    
+}
+colls="activeInstrument activeVariableDef activity activityJournal \
+
+    apiConsumer authorization dashboard dashboardDef dataset device \
+    emaOtsCardstack emaOtsTriggerCriteria emaOtsTriggerCriteriaAction \
+    emaOtsTriggerCriteriaTrigger epoch epochSchedule eventBundle \
+    eventBundleEvent eventBundleEvent.next_id feedback fileHandler \
+    fileType fileTypeDef groupCategory group_ instrument \
+    instrumentApplication instrumentConfig instrumentDef jobBatch \
+    jobDef language organization organizationDefinition \
+    participant participants period periodSchedule periodTemplate \
+    project projectDef quickPlotField quickPlotField.next_id \
+    quickPlotItem role schema shortUrl \
+    systemFeatureOwner systemSetting tag template tool toolDef trigger \
+    triggerAction triggerCondition triggerEvent user userRole \
+    variableDef"
+
+for coll in $colls ; do
+    echo $coll
+    dump-coll $coll
+done
+

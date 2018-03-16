@@ -1,0 +1,15 @@
+#!/bin/bash 
+# Load stuff dumped by dump-proj-collections into staging
+
+DB=mei-s4r-staging
+
+PASSWORD=$1
+COLLS=$(
+    cd dump-collection/mei-s4r-beta
+    ls *.bson.gz | sed -e 's/\.bson\.gz$//'
+)
+for coll in $COLLS; do
+  mongo  -u $DB-user -p $PASSWORD $DB --eval "db['$coll'].drop()" 
+done
+
+mongorestore --authenticationDatabase=admin -u mei -p $PASSWORD -d $DB --gzip --host=127.0.0.1 dump-collection/mei-s4r-beta/
