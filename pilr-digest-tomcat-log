@@ -1,4 +1,6 @@
 #!/usr/bin/awk -f
+
+# log format
 #127.0.0.1 - - [12/Jan/2018:08:07:12 -0600] "GET /apix/v2/cuny_parcs/instrument/ema_ots/participant/101003/period/active_period/getFeedback HTTP/1.0" 200 87
 #sed -e 's:.*- \[\([^]]*\)] "\([^ ]*\):\1,\2,:' $1
 
