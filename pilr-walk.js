@@ -51,8 +51,27 @@ var rels = [
     ["activity", "journal", "activityJournal"],
     ["emaOtsCardstack", "configuration", "instrumentConfig"],
 ];
-// TODO: authorization?, files, dataset data
 
+var newRels = [];
+var processed = {}
+function pushParents(ent) {
+    if (processed[ent]) return;
+    processed[ent] = true;
+    for (var i = 0; i < rels.length ; ++i) {
+        var [child, prop, parent] = rels[i];
+        if (child == ent) {
+            pushParents(parent);
+            newRels.push(rels[i]);
+        }
+    }
+}
+function sortRels() {
+    for (var i = 0; i < rels.length ; ++i) {
+        pushParents(rels[i][0]);
+    }
+    rels = newRels;
+}
+sortRels();
 
 
 function sanityCheck() {
@@ -79,9 +98,9 @@ function _defaultErrorHandler(msg, ent, id) { throw {name: 'walkError', message:
 function walkIds(parentEnt, ids, fns) {
     if (ids.length == 0)
         return;
+    var rels = parent2childRels[parentEnt];
     if (fns.before)
         fns.before(parentEnt, ids);
-    var rels = parent2childRels[parentEnt];
     //printjsononeline([parentEnt, ids, rels]);
     if (rels) {
         rels.forEach(([childEnt, prop]) => {
@@ -90,12 +109,24 @@ function walkIds(parentEnt, ids, fns) {
         })
     }
     if (fns.after)
-        fns.after(parentEnt, ids);
+        fns.after(parentEnt, ids, rels);
 }
 
- var r = {};
-function testIt() {
-    var proj = project(/./);
-    walkIds('project', [proj._id], {before: (ent, ids) => r[ent] = ids});
+function deleteProject(code, forReal) {
+    var actions = [];
+    var proj = db.project.findOne({code: code});
+    db.getCollectionNames().forEach(nm => {
+        if (nm.match(new RegExp(proj._id.toString()))) {
+            actions.push(['drop', nm]);
+            if (forReal) db[nm].drop();
+        }
+    });
+    actions.push(['removeAuth', {instanceId: proj._id, classname: 'com.pilrhealth.projects.Project'}]);
+    if (forReal)
+        db.authorization.remove({instanceId: proj._id, classname: 'com.pilrhealth.projects.Project'}, {multi: true});
+    walkIds('project', [proj._id], {after: (ent, ids) => {
+        actions.push(['remove', ent, {_id: {$in: ids}}]);
+        if (forReal) db[ent].remove({_id: {$in: ids}}, {multi: 1});
+    }})
+    return actions;
 }
-testIt()
