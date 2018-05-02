@@ -113,21 +113,30 @@ function walkIds(parentEnt, ids, fns) {
         fns.after(parentEnt, ids, rels);
 }
 
+function remove(coll, query) {
+    var result = coll.remove(query, {multi: true});
+    return result.nRemoved;
+}
+
+
 function deleteProject(code, forReal) {
     var actions = [];
     var proj = db.project.findOne({code: code});
     db.getCollectionNames().forEach(nm => {
         if (nm.match(new RegExp(proj._id.toString()))) {
-            actions.push(['drop', nm]);
-            if (forReal) db[nm].drop();
+            actions.push(['drop', nm,
+                          forReal ? db[nm].drop() : '-']);
         }
     });
-    actions.push(['removeAuth', {instanceId: proj._id, classname: 'com.pilrhealth.projects.Project'}]);
-    if (forReal)
-        db.authorization.remove({instanceId: proj._id, classname: 'com.pilrhealth.projects.Project'}, {multi: true});
+    actions.push(['removeAuth', {instanceId: proj._id, classname: 'com.pilrhealth.projects.Project'},
+                  forReal
+                  ? remove(db.authorization, {instanceId: proj._id, classname: 'com.pilrhealth.projects.Project'})
+                  : '-']);
     walkIds('project', [proj._id], {after: (ent, ids) => {
-        actions.push(['remove', ent, {_id: {$in: ids}}]);
-        if (forReal) db[ent].remove({_id: {$in: ids}}, {multi: 1});
+        actions.push(['remove', ent, {_id: {$in: ids}},
+                      forReal
+                      ? remove(db[ent], {_id: {$in: ids}})
+                      : '-']);
     }})
     return actions;
 }
@@ -137,21 +146,17 @@ function deleteOrganization(code, forReal) {
     var org = db.organization.findOne({code: code});
     if (!org) throw new Error("no such organization");
 
-    actions.push(['removeAuth', {instanceId: org._id, classname: 'com.pilrhealth.security.Organization'}]);
-    if (forReal)
-        db.authorization.remove({instanceId: org._id, classname: 'com.pilrhealth.security.Organization'},
-                                {multi: true});
+    actions.push(['removeAuth', {instanceId: org._id, classname: 'com.pilrhealth.security.Organization'},
+                  forReal
+                  ? remove(db.authorization, {instanceId: org._id,
+                                              classname: 'com.pilrhealth.security.Organization'})
+                  : '-']);
     db.project.find({organization: org._id}).forEach(proj => {
-        actions = actions.concat(deleteProject(proj.code), forReal);
+        actions = actions.concat(deleteProject(proj.code, forReal));
     });
-    actions.push(['organization', [org._id]])
-    if (forReal) {
-        db.organization.remove({_id: org._id});
-    }
+    actions.push(['organization', {_id: org._id},
+                  forReal
+                  ? remove(db.organization, {_id: org._id})
+                  : ''])
     return actions;
 }
-
-///////////////////
-//var org = db.organization.findOne({name: /testorg/});
-//db.project.count({organization: org._id});
-//deleteOrganization(org.code)
