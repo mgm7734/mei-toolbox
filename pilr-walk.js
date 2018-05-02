@@ -1,3 +1,4 @@
+/** extracted from belongsTo in source code */
 var rels = [
     // childEntity, property, parentEnttty
     ["device", "participant", "participant"],
@@ -130,3 +131,27 @@ function deleteProject(code, forReal) {
     }})
     return actions;
 }
+
+function deleteOrganization(code, forReal) {
+    var actions = [];
+    var org = db.organization.findOne({code: code});
+    if (!org) throw new Error("no such organization");
+
+    actions.push(['removeAuth', {instanceId: org._id, classname: 'com.pilrhealth.security.Organization'}]);
+    if (forReal)
+        db.authorization.remove({instanceId: org._id, classname: 'com.pilrhealth.security.Organization'},
+                                {multi: true});
+    db.project.find({organization: org._id}).forEach(proj => {
+        actions = actions.concat(deleteProject(proj.code), forReal);
+    });
+    actions.push(['organization', [org._id]])
+    if (forReal) {
+        db.organization.remove({_id: org._id});
+    }
+    return actions;
+}
+
+///////////////////
+//var org = db.organization.findOne({name: /testorg/});
+//db.project.count({organization: org._id});
+//deleteOrganization(org.code)
