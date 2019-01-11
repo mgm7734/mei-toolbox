@@ -183,6 +183,7 @@ function get(obj, key, dflt) {
     }
     return result
 }
+var _cache
 
 /////
 // Misc Validation
@@ -220,4 +221,3 @@ function badActInstSettings(projCode, doIt = false) {
     })
 
 }
->>>>>> 91f494f26efd559daf8015cb66acba175b0234c0
