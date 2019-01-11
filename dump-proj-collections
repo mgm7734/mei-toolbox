@@ -1,12 +1,20 @@
 #!/bin/bash
 PROJ=$1
+USER=mongeez-user
 PASSWORD=$2
+DB=beta
 
 function dump-coll() {
-    mongodump --authenticationDatabase=admin -u mei -p $PASSWORD -d mei-s4r-beta --gzip \
+    mongodump --authenticationDatabase=admin -u $USER -p $PASSWORD -d mei-s4r-$DB --gzip \
             --collection $1 \
             --host=127.0.0.1 --out dump-collection
-    
+
+}
+function dump-coll-arc() {
+    mongodump --authenticationDatabase=admin -u $USER -p $PASSWORD -d mei-s4r-$DB --gzip \
+            --collection $1 \
+            --host=127.0.0.1 --gzip --archive=dump.dmp
+
 }
 function dumpDatasets() {
     # PAT='new RegExp(`(app_log|notification_log|survey_data):data:${proj._id}`)'
