@@ -175,4 +175,49 @@ function deleteUatestProjects() {
         });
     return db.count.find({organizanization: 0});
 }
-deleteUatestProjects()
+
+function get(obj, key, dflt) {
+    var result = obj[key];
+    if (typeof result == 'undefined' && typeof dflt != 'undefined') {
+        obj[key] = result = dflt
+    }
+    return result
+}
+
+/////
+// Misc Validation
+function ptEpochs(ptIterable) {
+    ptIterable.forEach(pt => {
+        pt.settings && pt.settings.forEach(s => {
+            if (s.epoch && db.epoch.count({_id: s.epoch}) == 0) {
+                printjsononeline({pt: pt.code, proj: pt.project.code, setting: s.code, epochId: s.epoch})
+            }
+        })
+    })
+}
+function badActInstSettings(projCode, doIt = false) {
+    var proj = db.project.findOne({code: projCode})
+    var insts = db.instrument.find({project: proj._id}).map(it=>it._id)
+    var ais =  db.activeInstrument.find({ instrument: { $in: insts }}).toArray()
+    ais.forEach((ai, aix) => {
+        var badIxs = []
+        ai.settings.forEach((s, six) => {
+            if(s.epoch && db.epoch.count({_id: s.epoch}) == 0) {
+                badIxs.push(six);
+                s.code = 'BAD-' + s.code
+                s.bad_epoch = s.epoch
+                delete s.epoch
+            }
+        })
+        if (badIxs.length > 0) {
+            if (doIt) {
+                db.activeInstrument.update({_id: ai._id}, {$set: { settings: ai.settings }})
+            }
+            else {
+                printjson([ai._id, ai.settings])
+            }
+        }
+    })
+
+}
+>>>>>> 91f494f26efd559daf8015cb66acba175b0234c0
