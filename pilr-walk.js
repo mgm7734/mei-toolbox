@@ -160,6 +160,21 @@ function deleteOrganization(code, forReal) {
                   : ''])
     return actions;
 }
+function orgSizes() {
+    return db.project.aggregate([
+        {$group: {_id: '$organization', count: {$sum: 1}}},
+        {$sort: {count: -1}}
+    ])
+}
+
+function deleteUatestProjects() {
+    var org = db.organization.findOne({code: 'uatest_org'});
+    db.project.find({organization: 0}).limit(5).forEach(proj => {
+        //print(proj.code);
+        //printjson([deleteProject(proj.code)]);
+        });
+    return db.count.find({organizanization: 0});
+}
 
 function get(obj, key, dflt) {
     var result = obj[key];
@@ -171,7 +186,7 @@ function get(obj, key, dflt) {
 var _cache
 
 /////
-// Misc Validation 
+// Misc Validation
 function ptEpochs(ptIterable) {
     ptIterable.forEach(pt => {
         pt.settings && pt.settings.forEach(s => {
@@ -200,7 +215,7 @@ function badActInstSettings(projCode, doIt = false) {
                 db.activeInstrument.update({_id: ai._id}, {$set: { settings: ai.settings }})
             }
             else {
-                printjson([ai._id, ai.settings])    
+                printjson([ai._id, ai.settings])
             }
         }
     })
