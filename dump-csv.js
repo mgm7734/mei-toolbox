@@ -11,23 +11,25 @@ function printCSV(cursor) {
                 headers.push(key)
             }
         })
-        var columns = headers.map(flatKey => flatRow[flatKey]).map(quoteValue)
+        var columns = headers.map(flatKey => flatRow[flatKey]).map(formatValue)
         print(columns.join(','))
     }
     print(headers.join(','))
 }
 
-function quoteValue(value) {
-    if (typeof value != 'string') return value;
-    var escaped = value.split('"').join('""')
-    return `"${escaped}"`
+function formatValue(value) {
+    if (value == null) return '';
+    return JSON.stringify(value)
 }
 
 function eachFlattenedProperty(obj, fn, opt = {prefix: '', pathSep: '.' }) {
     Object.getOwnPropertyNames(obj).forEach(nm => {
         var fullName = opt.prefix + nm;
         var val = obj[nm];
-        if (typeof val == 'object') {
+        if (Array.isArray(val)) {
+            val = JSON.stringify(val)
+        }
+        if (val != null && typeof val == 'object') {
             eachFlattenedProperty(val, fn, { prefix: fullName + opt.pathSep, pathSep: opt.pathSep })
         }
         else {
